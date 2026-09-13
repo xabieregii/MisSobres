@@ -1,0 +1,2180 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mis Sobres — Gestor de dinero</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#101820">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Mis Sobres">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#101820;
+    --paper:#F3EFE3;
+    --text-on-ink:#EDE7D9;
+    --text-on-paper:#1B1B16;
+    --text-muted:#6B6555;
+    --line: rgba(27,27,22,0.14);
+    --green:#2F6F4F;
+    --burgundy:#7A2E2E;
+    --gold:#C08A3E;
+    --danger:#A13D3D;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--ink); color:var(--text-on-ink);
+    font-family:'Space Grotesk', sans-serif; min-height:100vh; padding-bottom:60px;
+  }
+  .wrap{ max-width:920px; margin:0 auto; padding:32px 20px 20px; }
+  header{
+    display:flex; justify-content:space-between; align-items:center;
+    margin-bottom:20px; gap:16px; flex-wrap:nowrap;
+    border-bottom:1px solid rgba(237,231,217,0.15); padding-bottom:20px;
+  }
+  .brand{ display:flex; flex-direction:column; gap:4px; min-width:0; }
+  .brand .mark{ font-family:'Fraunces', serif; font-weight:600; font-size:clamp(20px, 6vw, 28px); letter-spacing:-0.01em; white-space:nowrap; }
+  .brand .sub{ font-size:13px; color:rgba(237,231,217,0.55); letter-spacing:0.02em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .money-row{ margin-bottom:24px; }
+  .total-label{ font-size:12px; text-transform:uppercase; letter-spacing:0.08em; color:rgba(237,231,217,0.55); margin-bottom:6px; }
+  .total-value{ font-family:'Fraunces', serif; font-weight:600; font-size:clamp(26px, 8vw, 34px); font-variant-numeric:tabular-nums; white-space:nowrap; }
+
+  .avatar-btn{
+    width:44px; height:44px; border-radius:50%; padding:0; flex-shrink:0;
+    background:var(--paper); color:var(--text-on-paper); overflow:hidden;
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Fraunces', serif; font-weight:600; font-size:16px;
+    border:2px solid rgba(237,231,217,0.25);
+  }
+  .avatar-btn img{ width:100%; height:100%; object-fit:cover; }
+  .avatar-large{
+    width:72px; height:72px; border-radius:50%; flex-shrink:0; overflow:hidden;
+    background:var(--ink); color:var(--text-on-ink); display:flex; align-items:center; justify-content:center;
+    font-family:'Fraunces', serif; font-weight:600; font-size:24px;
+  }
+  .avatar-large img{ width:100%; height:100%; object-fit:cover; }
+  .profile-name{ font-family:'Fraunces', serif; font-weight:600; font-size:17px; }
+  .profile-sub{ font-size:12.5px; color:var(--text-muted); }
+
+  .actions{ display:flex; gap:10px; margin-bottom:28px; flex-wrap:wrap; }
+  button{
+    font-family:'Space Grotesk', sans-serif; cursor:pointer; border:none; border-radius:10px;
+    font-size:14px; font-weight:600; padding:12px 18px; transition:transform .12s ease, opacity .12s ease;
+  }
+  button:active{transform:scale(0.97);}
+  button:focus-visible{outline:2px solid var(--gold); outline-offset:2px;}
+  .btn-primary{background:var(--green); color:#F3EFE3;}
+  .btn-secondary{background:var(--burgundy); color:#F3EFE3;}
+  .btn-ghost{background:transparent; color:var(--text-on-ink); border:1px solid rgba(237,231,217,0.3);}
+  .btn-ghost:hover{border-color:rgba(237,231,217,0.6);}
+  .modal .btn-ghost{ color:var(--text-on-paper); border-color:rgba(27,27,22,0.3); }
+  .modal .btn-ghost:hover{ border-color:rgba(27,27,22,0.55); background:rgba(27,27,22,0.04); }
+
+  section.block{margin-bottom:36px;}
+  .block-title{ font-family:'Fraunces', serif; font-size:18px; font-weight:600; margin:0 0 14px 2px; display:flex; align-items:center; gap:10px; }
+  .block-title .count{ font-size:12px; color:rgba(237,231,217,0.45); font-weight:400; }
+
+  details.collapsible summary.block-title{ cursor:pointer; list-style:none; user-select:none; }
+  details.collapsible summary.block-title::-webkit-details-marker{ display:none; }
+  details.collapsible summary.block-title::after{ content:'▾'; margin-left:auto; font-size:13px; color:rgba(237,231,217,0.5); transition:transform .15s ease; }
+  details.collapsible[open] summary.block-title::after{ transform:rotate(180deg); }
+  details.collapsible > *:not(summary){ margin-top:14px; }
+
+  .chart-block{ display:flex; align-items:center; gap:28px; flex-wrap:wrap; }
+  .donut{ width:150px; height:150px; border-radius:50%; position:relative; flex-shrink:0; }
+  .donut::after{ content:''; position:absolute; inset:24px; border-radius:50%; background:var(--ink); }
+  .legend{ display:flex; flex-direction:column; gap:9px; }
+  .legend-row{ font-size:13px; color:var(--text-on-ink); display:flex; align-items:center; gap:8px; }
+  .legend-dot{ width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+
+  .evo-card{ background:var(--paper); color:var(--text-on-paper); border-radius:var(--radius); padding:18px; }
+  .evo-svg{ width:100%; height:160px; display:block; }
+  .evo-empty{ color:var(--text-muted); font-size:14px; text-align:center; padding:20px 0; }
+
+  .grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(230px, 1fr)); gap:14px; }
+  .envelope{
+    background:var(--paper); color:var(--text-on-paper); border-radius:var(--radius);
+    padding:18px 18px 16px; position:relative; box-shadow:0 6px 18px rgba(0,0,0,0.25);
+    border-top:5px solid var(--accent, var(--green));
+  }
+  .envelope .env-top{ display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:14px; }
+  .envelope .env-name{ font-family:'Fraunces', serif; font-weight:600; font-size:16px; line-height:1.25; padding-right:8px; }
+  .stamp{ background:var(--accent, var(--green)); color:#F3EFE3; font-size:11px; font-weight:700; padding:4px 8px; border-radius:20px; white-space:nowrap; transform:rotate(3deg); }
+  .envelope .env-balance{ font-family:'Fraunces', serif; font-size:26px; font-weight:600; font-variant-numeric:tabular-nums; }
+  .envelope.negative{ border-top-color:var(--danger); box-shadow:0 0 0 2px rgba(161,61,61,0.35), 0 6px 18px rgba(0,0,0,0.25); }
+  .envelope.negative .env-balance{ color:var(--danger); }
+  .env-meta{ font-size:12px; color:var(--text-muted); margin:4px 0 12px; line-height:1.5; }
+  .env-tags{ display:flex; flex-wrap:wrap; gap:6px; margin:6px 0 14px; }
+  .sub-items-list{ margin-top:10px; }
+
+  .invest-card{ width:100%; }
+  .invest-stats-row{ display:flex; flex-wrap:wrap; gap:18px 24px; margin:16px 0 18px; }
+  .invest-stat{ flex:1; min-width:130px; }
+  .invest-stat-label{ font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-muted); margin-bottom:4px; }
+  .invest-stat-value{ font-family:'Fraunces', serif; font-weight:600; font-size:21px; font-variant-numeric:tabular-nums; }
+  .invest-now-btn{ width:100%; font-size:15px; padding:15px; margin-bottom:16px; }
+  .invest-chart-wrap{ margin-top:4px; }
+  .sub-item-row{ display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--line); font-size:14px; }
+  .sub-item-row:last-child{ border-bottom:none; }
+  .sub-item-name{ flex:1; font-weight:600; }
+  .sub-item-amount{ font-variant-numeric:tabular-nums; color:var(--text-muted); }
+  .sub-item-row button{ padding:5px 10px; font-size:12px; background:rgba(27,27,22,0.06); color:var(--text-on-paper); }
+  .sub-item-row button:hover{ background:rgba(27,27,22,0.12); }
+  .env-tag{ display:inline-block; padding:4px 10px; border-radius:20px; font-size:11px; font-weight:700; white-space:nowrap; }
+  .env-tag.neutral{ background:rgba(27,27,22,0.07); color:var(--text-muted); }
+  .goal-bar-wrap{ margin-bottom:12px; }
+  .goal-bar{ height:6px; border-radius:4px; background:rgba(27,27,22,0.1); overflow:hidden; margin-bottom:4px; }
+  .goal-fill{ height:100%; border-radius:4px; }
+  .goal-text{ font-size:11px; color:var(--text-muted); }
+  .env-actions{ display:flex; gap:6px; flex-wrap:wrap; }
+  .env-actions button{ flex:1; background:rgba(27,27,22,0.06); color:var(--text-on-paper); padding:9px 6px; font-size:12.5px; }
+  .env-actions button:hover{background:rgba(27,27,22,0.12);}
+  .env-actions .del{color:var(--danger);}
+
+  .add-envelope{
+    border:2px dashed rgba(237,231,217,0.25); border-radius:var(--radius); display:flex;
+    align-items:center; justify-content:center; min-height:110px; color:rgba(237,231,217,0.55);
+    font-weight:600; font-size:14px; background:transparent; width:100%;
+  }
+  .add-envelope:hover{border-color:rgba(237,231,217,0.5); color:var(--text-on-ink);}
+
+  .filter-bar{ display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px; }
+  .filter-bar select, .filter-bar input{
+    padding:9px 12px; border-radius:8px; border:1px solid rgba(237,231,217,0.25);
+    background:var(--ink-soft, #1B2733); color:var(--text-on-ink); font-family:'Space Grotesk', sans-serif; font-size:13px;
+  }
+  .filter-bar button{ padding:9px 14px; font-size:13px; }
+
+  .ledger{ background:var(--paper); color:var(--text-on-paper); border-radius:var(--radius); overflow:hidden; }
+  .ledger-row{ display:flex; align-items:center; gap:12px; padding:13px 16px; border-bottom:1px solid var(--line); font-size:14px; flex-wrap:wrap; }
+  .ledger-row:last-child{border-bottom:none;}
+  .ledger-icon{ width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:14px; flex-shrink:0; color:#F3EFE3; }
+  .icon-in{background:var(--green);}
+  .icon-out{background:var(--burgundy);}
+  .ledger-main{flex:1; min-width:120px;}
+  .ledger-title{font-weight:600;}
+  .ledger-sub{color:var(--text-muted); font-size:12.5px; margin-top:2px;}
+  .ledger-right{ display:flex; align-items:center; gap:10px; }
+  .ledger-amount{font-variant-numeric:tabular-nums; font-weight:700; white-space:nowrap;}
+  .amount-in{color:var(--green);}
+  .amount-out{color:var(--burgundy);}
+  .ledger-date{color:var(--text-muted); font-size:12px; white-space:nowrap;}
+  .ledger-actions{ display:flex; gap:4px; }
+  .ledger-actions button{ padding:5px 8px; font-size:12px; background:rgba(27,27,22,0.06); color:var(--text-on-paper); }
+  .ledger-actions button:hover{background:rgba(27,27,22,0.12);}
+  .ledger-actions .del{color:var(--danger);}
+  .empty{ padding:30px 16px; text-align:center; color:var(--text-muted); font-size:14px; }
+
+  .overlay{ position:fixed; inset:0; background:rgba(16,24,32,0.7); display:none; align-items:center; justify-content:center; padding:20px; z-index:50; }
+  .overlay.open{display:flex;}
+  .modal{ background:var(--paper); color:var(--text-on-paper); border-radius:var(--radius); width:100%; max-width:420px; padding:24px; max-height:88vh; overflow-y:auto; position:relative; }
+  .modal h3{ font-family:'Fraunces', serif; margin:0 0 4px; font-size:20px; }
+  .modal p.hint{ margin:0 0 18px; font-size:13px; color:var(--text-muted); }
+  .field{margin-bottom:14px;}
+  .field label{ display:block; font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:6px; color:var(--text-muted); }
+  .field input, .field select{ width:100%; padding:11px 12px; border-radius:8px; border:1px solid var(--line); font-family:'Space Grotesk', sans-serif; font-size:15px; background:#fff; color:var(--text-on-paper); }
+  .field input:focus, .field select:focus{outline:2px solid var(--gold);}
+  .preview{ background:rgba(47,111,79,0.08); border:1px solid rgba(47,111,79,0.25); border-radius:10px; padding:12px 14px; margin-bottom:16px; }
+  .preview-row{ display:flex; justify-content:space-between; font-size:13.5px; padding:3px 0; }
+  .preview-row b{font-variant-numeric:tabular-nums;}
+  .modal-actions{ display:flex; gap:10px; margin-top:18px; flex-wrap:wrap; }
+  .modal-actions button{flex:1; min-width:100px;}
+  .close-x{ position:absolute; top:14px; right:14px; background:none; border:none; font-size:20px; color:var(--text-muted); padding:4px 8px; }
+
+  .percent-row{ display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--line); }
+  .percent-row:last-of-type{border-bottom:none;}
+  .percent-row .dot{width:10px; height:10px; border-radius:50%; flex-shrink:0;}
+  .percent-row .name{flex:1; font-size:14px; font-weight:600;}
+  .percent-row input{ width:70px; text-align:right; padding:8px 10px; border-radius:8px; border:1px solid var(--line); font-size:14px; }
+  .percent-sum{ display:flex; justify-content:space-between; font-weight:700; font-size:14px; margin-top:12px; padding-top:12px; border-top:2px solid var(--text-on-paper); }
+  .percent-sum.bad{color:var(--danger);}
+  .percent-sum.ok{color:var(--green);}
+  .error-text{color:var(--danger); font-size:12.5px; margin-top:4px; display:none;}
+  .error-text.show{display:block;}
+
+  .toast{
+    position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px);
+    background:var(--paper); color:var(--text-on-paper); padding:12px 20px; border-radius:10px;
+    font-size:14px; font-weight:600; box-shadow:0 8px 24px rgba(0,0,0,0.35);
+    opacity:0; pointer-events:none; transition:opacity .25s ease, transform .25s ease; z-index:100;
+  }
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+
+  #authScreen, #lockScreen{ min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px; }
+  .auth-card{ background:var(--paper); color:var(--text-on-paper); border-radius:var(--radius); width:100%; max-width:380px; padding:28px 26px; box-shadow:0 12px 32px rgba(0,0,0,0.4); }
+  .auth-card .mark{ font-family:'Fraunces', serif; font-weight:600; font-size:24px; margin-bottom:4px; }
+  .auth-card .sub{ font-size:13px; color:var(--text-muted); margin-bottom:22px; }
+  .auth-error{ color:var(--danger); font-size:13px; margin:-6px 0 12px; display:none; }
+  .auth-error.show{display:block;}
+  .auth-switch{ text-align:center; font-size:13px; color:var(--text-muted); margin-top:14px; }
+  .auth-switch a{ color:var(--green); font-weight:600; cursor:pointer; text-decoration:underline; }
+  #loadingScreen{ min-height:100vh; display:flex; align-items:center; justify-content:center; color:rgba(237,231,217,0.6); font-size:14px; }
+
+  @media (prefers-reduced-motion: reduce){ *{ transition:none !important; } }
+
+  @media (max-width: 640px){
+    .wrap{ padding:20px 14px 16px; }
+    header{ margin-bottom:16px; padding-bottom:16px; }
+    .actions{ flex-direction:column; }
+    .actions button{ width:100%; }
+    .block-title{ font-size:16px; }
+    .chart-block{ flex-direction:column; align-items:flex-start; gap:16px; }
+    .donut{ width:130px; height:130px; margin:0 auto; }
+    .legend{ width:100%; }
+    .grid{ grid-template-columns:1fr; }
+    .envelope{ padding:16px; }
+    .env-actions{ flex-wrap:wrap; }
+    .env-actions button{ min-width:calc(50% - 3px); flex:1 1 calc(50% - 3px); }
+    .filter-bar{ flex-direction:column; }
+    .filter-bar select, .filter-bar input, .filter-bar button{ width:100%; }
+    .ledger-row{ padding:12px; gap:10px; }
+    .ledger-right{ width:100%; justify-content:space-between; }
+    .modal{ padding:20px; max-width:100%; }
+  }
+
+  @media (max-width: 380px){
+    .total-value{ font-size:24px; }
+    .env-balance{ font-size:22px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="loadingScreen">Cargando…</div>
+
+<div id="authScreen" style="display:none;">
+  <div class="auth-card">
+    <div class="mark">Mis Sobres</div>
+    <div class="sub" id="authSubtitle">Inicia sesión para ver tus sobres en cualquier dispositivo</div>
+    <div class="auth-error" id="authError"></div>
+    <div id="signupFields" style="display:none;">
+      <div class="field">
+        <label for="authNombre">Nombre</label>
+        <input type="text" id="authNombre" placeholder="Tu nombre" autocomplete="given-name">
+      </div>
+      <div class="field">
+        <label for="authApellidos">Apellidos</label>
+        <input type="text" id="authApellidos" placeholder="Tus apellidos" autocomplete="family-name">
+      </div>
+      <div class="field">
+        <label for="authUsuario">Usuario</label>
+        <input type="text" id="authUsuario" placeholder="Elige un nombre de usuario" autocomplete="username">
+      </div>
+    </div>
+    <div class="field">
+      <label for="authEmail">Correo electrónico</label>
+      <input type="email" id="authEmail" placeholder="tucorreo@gmail.com" autocomplete="email">
+    </div>
+    <div class="field">
+      <label for="authPassword">Contraseña</label>
+      <input type="password" id="authPassword" placeholder="Mínimo 6 caracteres" autocomplete="current-password">
+    </div>
+    <button class="btn-primary" id="authSubmit" style="width:100%;">Iniciar sesión</button>
+    <div class="auth-switch">
+      <span id="authSwitchText">¿No tienes cuenta?</span> <a id="authSwitchLink">Crear una</a>
+    </div>
+  </div>
+</div>
+
+<div id="lockScreen" style="display:none;">
+  <div class="auth-card">
+    <div class="mark">🔒 Bloqueado</div>
+    <div class="sub">Introduce tu PIN para ver tus sobres</div>
+    <div class="auth-error" id="lockError"></div>
+    <div class="field">
+      <label for="lockPinInput">PIN</label>
+      <input type="password" id="lockPinInput" inputmode="numeric" maxlength="6" placeholder="••••">
+    </div>
+    <button class="btn-primary" id="lockSubmit" style="width:100%;">Entrar</button>
+  </div>
+</div>
+
+<div class="wrap" id="appRoot" style="display:none;">
+  <header>
+    <div class="brand">
+      <div class="mark">Mis Sobres</div>
+      <div class="sub">Reparte cada ingreso, sigue cada gasto</div>
+    </div>
+    <button class="avatar-btn" id="avatarBtn"><span id="avatarInitials">?</span></button>
+  </header>
+
+  <div class="money-row">
+    <div class="total-label">Dinero disponible</div>
+    <div class="total-value" id="totalValue">0,00 €</div>
+  </div>
+
+  <div class="actions">
+    <button class="btn-primary" id="openIncome">+ Añadir ingreso</button>
+    <button class="btn-secondary" id="openExpense">− Añadir gasto</button>
+    <button class="btn-ghost" id="openPercents">Ajustar reparto (%)</button>
+    <button class="btn-ghost" id="openSubscriptions">🔁 Suscripciones</button>
+  </div>
+
+  <details class="block collapsible" id="chartDetails">
+    <summary class="block-title">Reparto visual</summary>
+    <div class="chart-block" id="chartWrap"></div>
+  </details>
+
+  <details class="block collapsible" id="evoDetails">
+    <summary class="block-title">Evolución del ahorro</summary>
+    <div class="evo-card"><div id="evoWrap"></div></div>
+  </details>
+
+  <section class="block">
+    <div class="block-title">Tus sobres <span class="count" id="envCount"></span></div>
+    <div class="grid" id="envelopeGrid"></div>
+  </section>
+
+  <section class="block" id="investmentSection" style="display:none;">
+    <div class="block-title">📈 Inversiones</div>
+    <div id="investPanel"></div>
+  </section>
+
+  <section class="block" id="subscriptionSection" style="display:none;">
+    <div class="block-title">🔁 Suscripciones</div>
+    <div id="subscriptionCard"></div>
+  </section>
+
+  <section class="block">
+    <div class="block-title">Historial</div>
+    <div class="filter-bar">
+      <input type="text" id="filterText" placeholder="Buscar por texto...">
+      <select id="filterCategory"><option value="">Todos los sobres</option></select>
+      <input type="month" id="filterMonth">
+      <button class="btn-ghost" id="clearFilters">Limpiar filtros</button>
+    </div>
+    <div class="ledger" id="ledgerList"></div>
+  </section>
+</div>
+
+<!-- MODAL: Ingreso -->
+<div class="overlay" id="incomeOverlay">
+  <div class="modal">
+    <button class="close-x" data-close>×</button>
+    <h3>Añadir ingreso</h3>
+    <p class="hint">Elige si se reparte automáticamente o si va todo a un sobre en concreto.</p>
+    <div class="field">
+      <label style="display:flex; align-items:center; gap:8px; text-transform:none; font-size:14px; font-weight:600; margin-bottom:8px;">
+        <input type="radio" name="incomeMode" id="incomeModePercent" value="percent" checked style="width:auto;"> Repartir según mis porcentajes
+      </label>
+      <label style="display:flex; align-items:center; gap:8px; text-transform:none; font-size:14px; font-weight:600;">
+        <input type="radio" name="incomeMode" id="incomeModeManual" value="manual" style="width:auto;"> Meterlo todo en un sobre concreto
+      </label>
+    </div>
+    <div class="field" id="incomeManualField" style="display:none;">
+      <label for="incomeManualCategory">Sobre</label>
+      <select id="incomeManualCategory"></select>
+    </div>
+    <div class="field">
+      <label for="incomeAmount">Cantidad (€)</label>
+      <input type="number" id="incomeAmount" min="0" step="0.01" placeholder="0,00">
+    </div>
+    <div class="field">
+      <label for="incomeNote">Concepto (opcional)</label>
+      <input type="text" id="incomeNote" placeholder="Nómina, extra, regalo...">
+    </div>
+    <div class="preview" id="incomePreview"></div>
+    <div class="modal-actions">
+      <button class="btn-ghost" data-close>Cancelar</button>
+      <button class="btn-primary" id="confirmIncome">Repartir</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Gasto -->
+<div class="overlay" id="expenseOverlay">
+  <div class="modal">
+    <button class="close-x" data-close>×</button>
+    <h3>Añadir gasto</h3>
+    <p class="hint">Se resta del sobre que elijas.</p>
+    <div class="field">
+      <label for="expenseCategory">Sobre</label>
+      <select id="expenseCategory"></select>
+    </div>
+    <div class="field">
+      <label for="expensePhotoInput">Foto del gasto (opcional)</label>
+      <input type="file" id="expensePhotoInput" accept="image/*" capture="environment">
+      <img id="expensePhotoPreview" style="display:none; max-width:120px; border-radius:8px; margin-top:8px;">
+      <button type="button" class="btn-ghost btn-small" id="expensePhotoRemove" style="display:none; margin-top:8px;">Quitar foto</button>
+    </div>
+    <div class="field">
+      <label for="expenseAmount">Cantidad (€)</label>
+      <input type="number" id="expenseAmount" min="0" step="0.01" placeholder="0,00">
+    </div>
+    <div class="field">
+      <label for="expenseNote">Concepto (opcional)</label>
+      <input type="text" id="expenseNote" placeholder="Billete de tren, cena...">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-ghost" data-close>Cancelar</button>
+      <button class="btn-secondary" id="confirmExpense">Restar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Ajustar porcentajes -->
+<div class="overlay" id="percentOverlay">
+  <div class="modal">
+    <button class="close-x" data-close>×</button>
+    <h3>Ajustar reparto</h3>
+    <p class="hint">Define qué porcentaje de cada ingreso va a cada sobre. Debe sumar 100%.</p>
+    <div id="percentList"></div>
+    <div class="percent-sum" id="percentSum">Suma: 0%</div>
+    <div class="error-text" id="percentError">La suma debe ser exactamente 100%.</div>
+    <div class="modal-actions">
+      <button class="btn-ghost" data-close>Cancelar</button>
+      <button class="btn-primary" id="confirmPercents">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Añadir sobre -->
+<div class="overlay" id="addCatOverlay">
+  <div class="modal">
+    <button class="close-x" data-close>×</button>
+    <h3>Nuevo sobre</h3>
+    <p class="hint">Los demás porcentajes se reducirán en proporción para dejar sitio a este.</p>
+    <div class="field">
+      <label for="newCatName">Nombre</label>
+      <input type="text" id="newCatName" placeholder="Ej: Fondo emergencia">
+    </div>
+    <div class="field">
+      <label for="newCatPercent">Porcentaje inicial (%)</label>
+      <input type="number" id="newCatPercent" min="1" max="99" step="1" placeholder="10">
+    </div>
+    <div class="field" style="display:flex; align-items:center; gap:8px;">
+      <input type="checkbox" id="newCatGoalEnabled" style="width:auto;">
+      <label for="newCatGoalEnabled" style="margin:0; text-transform:none; font-size:13px; letter-spacing:0;">Quiero poder ponerle una meta de ahorro a este sobre</label>
+    </div>
+    <div class="field" style="display:flex; align-items:center; gap:8px;">
+      <input type="checkbox" id="newCatIsInvestment" style="width:auto;">
+      <label for="newCatIsInvestment" style="margin:0; text-transform:none; font-size:13px; letter-spacing:0;">Es dinero invertido: no lo cuentes en "Dinero disponible" ni lo dejes elegible para gastos</label>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-ghost" data-close>Cancelar</button>
+      <button class="btn-primary" id="confirmAddCat">Crear sobre</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Eliminar sobre con saldo -->
+<div class="overlay" id="delCatOverlay">
+  <div class="modal">
+    <button class="close-x" data-close>×</button>
+    <h3>Eliminar sobre</h3>
+    <p class="hint" id="delCatHint"></p>
+    <div class="field" id="delCatMoveField">
+      <label for="delCatMoveTo">Mover el saldo restante a</label>
+      <select id="delCatMoveTo"></select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-ghost" data-close>Cancelar</button>
+      <button class="btn-secondary" id="confirmDelCat">Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Perfil -->
+<div class="overlay" id="profileOverlay">
+  <div class="modal">
+    <button class="close-x" data-close>×</button>
+    <h3>Tu perfil</h3>
+    <div style="display:flex; align-items:center; gap:14px; margin-bottom:20px;">
+      <div class="avatar-large" id="avatarLarge"><span id="avatarLargeInitials">?</span></div>
+      <div>
+        <div class="profile-name" id="profileDisplayName">—</div>
+        <div class="profile-sub" id="profileDisplayEmail">—</div>
+        <input type="file" id="avatarInput" accept="image/*" style="display:none;">
+        <button class="btn-ghost btn-small" id="avatarChangeBtn" style="margin-top:8px;">Cambiar foto</button>
+      </div>
+    </div>
+    <div class="field">
+      <label for="profileNombre">Nombre</label>
+      <input type="text" id="profileNombre">
+    </div>
+    <div class="field">
+      <label for="profileApellidos">Apellidos</label>
+      <input type="text" id="profileApellidos">
+    </div>
+    <div class="field">
+      <label for="profileUsuario">Usuario</label>
+      <input type="text" id="profileUsuario">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-ghost" data-close>Cancelar</button>
+      <button class="btn-primary" id="profileSaveBtn">Guardar cambios</button>
+    </div>
+    <div style="border-top:1px solid var(--line); margin:20px 0 16px;"></div>
+    <div style="display:flex; flex-direction:column; gap:8px;">
+      <button class="btn-ghost" id="toggleHideBtn" style="width:100%;">🙈 Ocultar importes</button>
+      <button class="btn-ghost" id="pinSettingsBtn" style="width:100%;">🔒 PIN</button>
+      <button class="btn-secondary" id="logoutBtn" style="width:100%;">Cerrar sesión</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: PIN -->
+<div class="overlay" id="pinOverlay">
+  <div class="modal">
+    <button class="close-x" data-close>×</button>
+    <h3>Código PIN</h3>
+    <p class="hint" id="pinStatusHint">Añade un PIN de 4 a 6 dígitos como capa extra al abrir la app en este u otro dispositivo.</p>
+    <div class="field">
+      <label for="pinNew">Nuevo PIN (4-6 dígitos)</label>
+      <input type="password" id="pinNew" inputmode="numeric" maxlength="6" placeholder="••••">
+    </div>
+    <div class="field">
+      <label for="pinConfirm">Confirmar PIN</label>
+      <input type="password" id="pinConfirm" inputmode="numeric" maxlength="6" placeholder="••••">
+    </div>
+    <div class="error-text show" id="pinError" style="display:none;"></div>
+    <div class="modal-actions">
+      <button class="btn-ghost" data-close>Cancelar</button>
+      <button class="btn-secondary" id="pinRemoveBtn" style="display:none;">Quitar PIN</button>
+      <button class="btn-primary" id="pinSaveBtn">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Bienvenida -->
+<div class="overlay" id="onboardingOverlay">
+  <div class="modal">
+    <h3>👋 Bienvenido a Mis Sobres</h3>
+    <p class="hint">Una forma sencilla de repartir tu dinero. Cuatro cosas para empezar:</p>
+    <ul style="margin:0 0 18px; padding-left:20px; font-size:14px; line-height:1.9; color:var(--text-on-paper);">
+      <li><b>+ Añadir ingreso</b>: repártelo entre tus sobres según tus porcentajes, o mételo todo en uno concreto.</li>
+      <li><b>− Añadir gasto</b>: se resta de un sobre, y puedes adjuntarle una foto si quieres.</li>
+      <li>Los sobres con <b>🔒 No disponible</b> son inversiones: no cuentan como dinero para gastar.</li>
+      <li>Toca tu <b>avatar</b>, arriba a la derecha, para tu perfil, ocultar importes, poner un PIN o cerrar sesión.</li>
+    </ul>
+    <p class="hint" style="margin-bottom:18px;">Todo se guarda solo y se sincroniza en cualquier dispositivo donde inicies sesión.</p>
+    <div class="modal-actions">
+      <button class="btn-primary" id="onboardingDismiss" style="width:100%;">Entendido, vamos allá</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Suscripciones -->
+<div class="overlay" id="subscriptionOverlay">
+  <div class="modal">
+    <button class="close-x" data-close>×</button>
+    <h3>Suscripciones</h3>
+    <p class="hint">El total mensual se resta primero, en fijo, cada vez que añades un ingreso repartido por porcentajes. El resto se reparte como siempre entre tus sobres.</p>
+    <div id="subscriptionItemsList"></div>
+    <div style="border-top:1px solid var(--line); margin:18px 0 16px;"></div>
+    <div class="field">
+      <label for="newSubName">Nombre</label>
+      <input type="text" id="newSubName" placeholder="Netflix">
+    </div>
+    <div class="field">
+      <label for="newSubAmount">Cantidad mensual (€)</label>
+      <input type="number" id="newSubAmount" min="0" step="0.01" placeholder="5.00">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-ghost" data-close>Cerrar</button>
+      <button class="btn-primary" id="addSubscriptionBtn">Añadir suscripción</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Genérico (confirmar / pedir datos) -->
+<div class="overlay generic-modal" id="genericModalOverlay">
+  <div class="modal">
+    <button class="close-x">×</button>
+    <h3 id="genericModalTitle"></h3>
+    <p class="hint" id="genericModalMessage" style="display:none;"></p>
+    <div id="genericModalFields"></div>
+    <div class="modal-actions">
+      <button class="btn-ghost" id="genericModalCancel">Cancelar</button>
+      <button class="btn-primary" id="genericModalConfirm">Aceptar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
+  signOut, onAuthStateChanged, updateProfile
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import {
+  getFirestore, doc, getDoc, setDoc, onSnapshot
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAwWwbeYiC8Q7lKvqn3eJ6qn6ia225M1dk",
+  authDomain: "gestion-dinero-9aafe.firebaseapp.com",
+  projectId: "gestion-dinero-9aafe",
+  storageBucket: "gestion-dinero-9aafe.firebasestorage.app",
+  messagingSenderId: "943942635511",
+  appId: "1:943942635511:web:575906644d67af5d2fa8f2"
+};
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('./sw.js').catch(err=>console.error('Error registrando el service worker', err));
+  });
+}
+
+const fbApp = initializeApp(firebaseConfig);
+const auth = getAuth(fbApp);
+const db = getFirestore(fbApp);
+
+const PALETTE = ['#2F6F4F','#1D5C73','#7A2E2E','#3B6E8F','#C08A3E','#4B5D3A','#8C4A2F','#5B4B8A'];
+
+let state = null;
+let pendingDeleteId = null;
+let currentUid = null;
+let unsubscribeDoc = null;
+let isSignUpMode = false;
+let suppressNextSnapshot = false;
+let sessionUnlocked = false;
+let pendingProfile = null;
+let currentEmail = '';
+let hideAmounts = false;
+try{ hideAmounts = localStorage.getItem('hideAmounts') === '1'; }catch(e){ /* sin acceso, se queda en false */ }
+
+const fmt = (n) => {
+  if(hideAmounts) return '••••• €';
+  return (Math.round(n*100)/100).toLocaleString('es-ES', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' €';
+};
+
+function uid(){ return 'h_' + Date.now() + '_' + Math.random().toString(36).slice(2,8); }
+
+function ensureSubscriptionPot(){
+  let pot = state.categories.find(c=>c.isSubscriptionPot);
+  if(!pot){
+    pot = {
+      id: 'suscripciones', name: 'Suscripciones', percent: 0, balance: 0, totalAdded: 0,
+      goal: null, goalEnabled: false, isInvestment: false, isSubscriptionPot: true, bank:'', color: PALETTE[6]
+    };
+    state.categories.push(pot);
+  }
+  return pot;
+}
+
+try{
+  if(window.matchMedia('(max-width: 640px)').matches){
+    document.getElementById('chartDetails').open = false;
+    document.getElementById('evoDetails').open = false;
+  } else {
+    document.getElementById('chartDetails').open = true;
+    document.getElementById('evoDetails').open = true;
+  }
+}catch(e){ /* no pasa nada, quedan con su estado por defecto */ }
+
+function defaultState(){
+  return {
+    appPin: null,
+    profile: { nombre:'', apellidos:'', usuario:'', photo:null },
+    categories: [
+      {id:'ahorro',    name:'Ahorro personal', percent:20, balance:0, totalAdded:0, goal:null, goalEnabled:false, isInvestment:false, bank:'', color:PALETTE[0]},
+      {id:'inversion', name:'Inversiones',      percent:20, balance:0, totalAdded:0, goal:null, goalEnabled:false, isInvestment:true, pendingToInvest:0, marketValue:null, marketHistory:[], bank:'', color:PALETTE[1]},
+      {id:'londres',   name:'Viaje Londres',    percent:20, balance:0, totalAdded:0, goal:null, goalEnabled:true,  isInvestment:false, bank:'', color:PALETTE[2]},
+      {id:'portugal',  name:'Viaje Portugal',   percent:20, balance:0, totalAdded:0, goal:null, goalEnabled:true,  isInvestment:false, bank:'', color:PALETTE[3]},
+      {id:'gasto',     name:'Gasto personal',   percent:20, balance:0, totalAdded:0, goal:null, goalEnabled:false, isInvestment:false, bank:'', color:PALETTE[4]}
+    ],
+    subscriptions: [],
+    history: []
+  };
+}
+
+function normalizeState(s){
+  if(s.appPin === undefined) s.appPin = null;
+  if(!s.profile) s.profile = { nombre:'', apellidos:'', usuario:'', photo:null };
+  if(s.profile.photo === undefined) s.profile.photo = null;
+  if(!Array.isArray(s.subscriptions)) s.subscriptions = [];
+  s.categories.forEach(c=>{
+    if(typeof c.totalAdded !== 'number') c.totalAdded = c.balance;
+    if(c.goal === undefined) c.goal = null;
+    if(c.goalEnabled === undefined) c.goalEnabled = (c.id === 'londres' || c.id === 'portugal');
+    if(c.isInvestment === undefined) c.isInvestment = (c.id === 'inversion');
+    if(c.isSubscriptionPot === undefined) c.isSubscriptionPot = false;
+    if(c.marketValue === undefined) c.marketValue = null;
+    if(!Array.isArray(c.marketHistory)) c.marketHistory = [];
+    if(c.bank === undefined) c.bank = '';
+    if(typeof c.pendingToInvest !== 'number') c.pendingToInvest = 0;
+  });
+  s.history.forEach(h=>{ if(!h.id) h.id = uid(); });
+  return s;
+}
+
+// ---------- Auth wiring ----------
+onAuthStateChanged(auth, async (user)=>{
+  document.getElementById('loadingScreen').style.display = 'none';
+  if(user){
+    currentUid = user.uid;
+    currentEmail = user.email;
+    document.getElementById('authScreen').style.display = 'none';
+    subscribeToUserDoc(user.uid);
+  } else {
+    currentUid = null;
+    sessionUnlocked = false;
+    onboardingCheckedThisSession = false;
+    if(unsubscribeDoc) { unsubscribeDoc(); unsubscribeDoc = null; }
+    document.getElementById('appRoot').style.display = 'none';
+    document.getElementById('lockScreen').style.display = 'none';
+    document.getElementById('authScreen').style.display = 'flex';
+  }
+});
+
+function subscribeToUserDoc(uidStr){
+  const ref = doc(db, 'users', uidStr);
+  unsubscribeDoc = onSnapshot(ref, async (snap)=>{
+    if(suppressNextSnapshot){ suppressNextSnapshot = false; return; }
+    if(snap.exists()){
+      state = normalizeState(snap.data());
+    } else {
+      state = defaultState();
+      if(pendingProfile){ state.profile = pendingProfile; pendingProfile = null; }
+      await setDoc(ref, state);
+    }
+    decideScreen();
+  }, (err)=>{
+    console.error('Error de sincronización', err);
+    showToast('No se pudo conectar con la base de datos');
+  });
+}
+
+function decideScreen(){
+  if(state.appPin && !sessionUnlocked){
+    document.getElementById('appRoot').style.display = 'none';
+    document.getElementById('lockScreen').style.display = 'flex';
+    document.getElementById('lockPinInput').value = '';
+    document.getElementById('lockPinInput').focus();
+  } else {
+    document.getElementById('lockScreen').style.display = 'none';
+    document.getElementById('appRoot').style.display = 'block';
+    render();
+    maybeShowOnboarding();
+  }
+}
+
+let onboardingCheckedThisSession = false;
+function maybeShowOnboarding(){
+  if(onboardingCheckedThisSession) return;
+  onboardingCheckedThisSession = true;
+  try{
+    const key = 'onboardingSeen_' + currentUid;
+    if(localStorage.getItem(key) !== '1'){
+      openModal('onboardingOverlay');
+    }
+  }catch(e){ /* sin acceso a localStorage, no mostramos la bienvenida */ }
+}
+
+document.getElementById('onboardingDismiss').addEventListener('click', ()=>{
+  try{ localStorage.setItem('onboardingSeen_' + currentUid, '1'); }catch(e){ /* no pasa nada */ }
+  closeAllModals();
+});
+
+document.getElementById('lockSubmit').addEventListener('click', tryUnlock);
+document.getElementById('lockPinInput').addEventListener('keydown', (e)=>{ if(e.key==='Enter') tryUnlock(); });
+function tryUnlock(){
+  const input = document.getElementById('lockPinInput').value.trim();
+  const errEl = document.getElementById('lockError');
+  if(input === state.appPin){
+    sessionUnlocked = true;
+    errEl.classList.remove('show');
+    decideScreen();
+  } else {
+    errEl.textContent = 'PIN incorrecto.';
+    errEl.classList.add('show');
+  }
+}
+
+async function saveState(){
+  if(!currentUid) return;
+  try{
+    suppressNextSnapshot = true;
+    await setDoc(doc(db, 'users', currentUid), state);
+  }catch(e){
+    console.error('Error guardando estado', e);
+    showToast('No se pudo guardar. Revisa tu conexión.');
+  }
+}
+
+function authErrorMessage(code){
+  const map = {
+    'auth/invalid-email':'El correo no es válido.',
+    'auth/missing-password':'Escribe una contraseña.',
+    'auth/weak-password':'La contraseña debe tener al menos 6 caracteres.',
+    'auth/email-already-in-use':'Ya existe una cuenta con ese correo. Inicia sesión.',
+    'auth/invalid-credential':'Correo o contraseña incorrectos.',
+    'auth/wrong-password':'Correo o contraseña incorrectos.',
+    'auth/user-not-found':'No existe ninguna cuenta con ese correo.',
+    'auth/too-many-requests':'Demasiados intentos. Prueba de nuevo en un rato.'
+  };
+  return map[code] || 'Ha ocurrido un error. Inténtalo de nuevo.';
+}
+
+function setAuthError(msg){
+  const el = document.getElementById('authError');
+  if(msg){ el.textContent = msg; el.classList.add('show'); }
+  else { el.textContent=''; el.classList.remove('show'); }
+}
+
+document.getElementById('authSubmit').addEventListener('click', async ()=>{
+  const email = document.getElementById('authEmail').value.trim();
+  const password = document.getElementById('authPassword').value;
+  setAuthError('');
+
+  if(isSignUpMode){
+    const nombre = document.getElementById('authNombre').value.trim();
+    const apellidos = document.getElementById('authApellidos').value.trim();
+    const usuario = document.getElementById('authUsuario').value.trim();
+    if(!nombre || !apellidos || !usuario){ setAuthError('Rellena nombre, apellidos y usuario.'); return; }
+    if(!email || !password){ setAuthError('Rellena correo y contraseña.'); return; }
+    try{
+      const cred = await createUserWithEmailAndPassword(auth, email, password);
+      await updateProfile(cred.user, { displayName: `${nombre} ${apellidos}` });
+      pendingProfile = { nombre, apellidos, usuario, photo:null };
+    }catch(e){
+      setAuthError(authErrorMessage(e.code));
+    }
+  } else {
+    if(!email || !password){ setAuthError('Rellena correo y contraseña.'); return; }
+    try{
+      await signInWithEmailAndPassword(auth, email, password);
+    }catch(e){
+      setAuthError(authErrorMessage(e.code));
+    }
+  }
+});
+
+document.getElementById('authSwitchLink').addEventListener('click', ()=>{
+  isSignUpMode = !isSignUpMode;
+  setAuthError('');
+  document.getElementById('signupFields').style.display = isSignUpMode ? 'block' : 'none';
+  document.getElementById('authSubmit').textContent = isSignUpMode ? 'Crear cuenta' : 'Iniciar sesión';
+  document.getElementById('authSubtitle').textContent = isSignUpMode ? 'Crea tu cuenta para empezar a repartir tu dinero' : 'Inicia sesión para ver tus sobres en cualquier dispositivo';
+  document.getElementById('authSwitchText').textContent = isSignUpMode ? '¿Ya tienes cuenta?' : '¿No tienes cuenta?';
+  document.getElementById('authSwitchLink').textContent = isSignUpMode ? 'Iniciar sesión' : 'Crear una';
+});
+
+document.getElementById('logoutBtn').addEventListener('click', ()=>{
+  signOut(auth);
+});
+
+function updateHideBtnLabel(){
+  const btn = document.getElementById('toggleHideBtn');
+  btn.textContent = hideAmounts ? '🙉 Mostrar importes' : '🙈 Ocultar importes';
+}
+updateHideBtnLabel();
+
+document.getElementById('toggleHideBtn').addEventListener('click', ()=>{
+  hideAmounts = !hideAmounts;
+  try{ localStorage.setItem('hideAmounts', hideAmounts ? '1' : '0'); }catch(e){ /* sin acceso, no pasa nada */ }
+  updateHideBtnLabel();
+  if(state) render();
+});
+
+// ---------- PIN settings ----------
+document.getElementById('pinSettingsBtn').addEventListener('click', ()=>{
+  document.getElementById('pinNew').value = '';
+  document.getElementById('pinConfirm').value = '';
+  document.getElementById('pinError').style.display = 'none';
+  document.getElementById('pinStatusHint').textContent = state.appPin
+    ? 'Ya tienes un PIN activado. Escribe uno nuevo para cambiarlo, o quítalo abajo.'
+    : 'Añade un PIN de 4 a 6 dígitos como capa extra al abrir la app en este u otro dispositivo.';
+  document.getElementById('pinRemoveBtn').style.display = state.appPin ? 'block' : 'none';
+  openModal('pinOverlay');
+});
+
+document.getElementById('pinSaveBtn').addEventListener('click', async ()=>{
+  const a = document.getElementById('pinNew').value.trim();
+  const b = document.getElementById('pinConfirm').value.trim();
+  const errEl = document.getElementById('pinError');
+  if(!/^\d{4,6}$/.test(a)){ errEl.textContent = 'El PIN debe tener entre 4 y 6 dígitos.'; errEl.style.display='block'; return; }
+  if(a !== b){ errEl.textContent = 'Los dos PIN no coinciden.'; errEl.style.display='block'; return; }
+  state.appPin = a;
+  sessionUnlocked = true;
+  await saveState();
+  closeAllModals();
+  showToast('PIN guardado');
+});
+
+document.getElementById('pinRemoveBtn').addEventListener('click', async ()=>{
+  state.appPin = null;
+  await saveState();
+  closeAllModals();
+  showToast('PIN eliminado');
+});
+
+// ---------- Render ----------
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(()=>t.classList.remove('show'), 2200);
+}
+
+function render(){
+  renderTotal();
+  renderChart();
+  renderEvolution();
+  renderEnvelopes();
+  renderInvestmentPanel();
+  renderSubscriptionsCard();
+  renderFilterOptions();
+  renderHistory();
+  renderAvatar();
+}
+
+function initials(){
+  const n = (state.profile.nombre||'').trim();
+  const a = (state.profile.apellidos||'').trim();
+  const s = (n[0]||'') + (a[0]||'');
+  return s ? s.toUpperCase() : (currentEmail ? currentEmail[0].toUpperCase() : '?');
+}
+
+function renderAvatar(){
+  const photo = state.profile.photo;
+  const btnInitialsEl = document.getElementById('avatarInitials');
+  const largeInitialsEl = document.getElementById('avatarLargeInitials');
+  const btn = document.getElementById('avatarBtn');
+  const large = document.getElementById('avatarLarge');
+
+  document.querySelectorAll('.avatar-btn img, .avatar-large img').forEach(img=>img.remove());
+
+  if(photo){
+    const img1 = document.createElement('img'); img1.src = photo;
+    const img2 = document.createElement('img'); img2.src = photo;
+    btn.appendChild(img1);
+    large.appendChild(img2);
+    btnInitialsEl.style.display = 'none';
+    largeInitialsEl.style.display = 'none';
+  } else {
+    btnInitialsEl.style.display = 'block';
+    largeInitialsEl.style.display = 'block';
+    btnInitialsEl.textContent = initials();
+    largeInitialsEl.textContent = initials();
+  }
+
+  const fullName = [state.profile.nombre, state.profile.apellidos].filter(Boolean).join(' ');
+  document.getElementById('profileDisplayName').textContent = fullName || (state.profile.usuario || 'Sin nombre');
+  document.getElementById('profileDisplayEmail').textContent = currentEmail || '';
+}
+
+document.getElementById('avatarBtn').addEventListener('click', ()=>{
+  document.getElementById('profileNombre').value = state.profile.nombre || '';
+  document.getElementById('profileApellidos').value = state.profile.apellidos || '';
+  document.getElementById('profileUsuario').value = state.profile.usuario || '';
+  openModal('profileOverlay');
+});
+
+document.getElementById('avatarChangeBtn').addEventListener('click', ()=>{
+  document.getElementById('avatarInput').click();
+});
+
+function resizeImageToDataUrl(file, maxSize){
+  return new Promise((resolve, reject)=>{
+    const reader = new FileReader();
+    reader.onload = (e)=>{
+      const img = new Image();
+      img.onload = ()=>{
+        let w = img.width, h = img.height;
+        if(w > h){ if(w > maxSize){ h = Math.round(h * maxSize/w); w = maxSize; } }
+        else { if(h > maxSize){ w = Math.round(w * maxSize/h); h = maxSize; } }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', 0.82));
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+document.getElementById('avatarInput').addEventListener('change', async (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  try{
+    const dataUrl = await resizeImageToDataUrl(file, 200);
+    state.profile.photo = dataUrl;
+    await saveState();
+    renderAvatar();
+    showToast('Foto actualizada');
+  }catch(err){
+    console.error('Error procesando la foto', err);
+    showToast('No se pudo procesar la foto');
+  }
+});
+
+document.getElementById('profileSaveBtn').addEventListener('click', async ()=>{
+  const nombre = document.getElementById('profileNombre').value.trim();
+  const apellidos = document.getElementById('profileApellidos').value.trim();
+  const usuario = document.getElementById('profileUsuario').value.trim();
+  if(!nombre || !apellidos || !usuario){ showToast('Rellena nombre, apellidos y usuario'); return; }
+  state.profile.nombre = nombre;
+  state.profile.apellidos = apellidos;
+  state.profile.usuario = usuario;
+  await saveState();
+  renderAvatar();
+  closeAllModals();
+  showToast('Perfil actualizado');
+});
+
+function renderTotal(){
+  const total = state.categories.reduce((s,c)=> c.isInvestment ? s : s+c.balance, 0);
+  document.getElementById('totalValue').textContent = fmt(total);
+}
+
+function renderChart(){
+  const wrap = document.getElementById('chartWrap');
+  const total = state.categories.reduce((s,c)=>s+Math.max(c.balance,0),0);
+  if(total<=0){
+    wrap.innerHTML = '<div class="empty">Añade tu primer ingreso para ver el reparto visual.</div>';
+    return;
+  }
+  let acc = 0;
+  const stops = state.categories.map(c=>{
+    const share = Math.max(c.balance,0)/total*100;
+    const start = acc; acc += share;
+    return `${c.color} ${start}% ${acc}%`;
+  }).join(', ');
+  const legend = state.categories.map(c=>{
+    const share = Math.round(Math.max(c.balance,0)/total*100);
+    return `<div class="legend-row"><span class="legend-dot" style="background:${c.color}"></span>${escapeHtml(c.name)} · ${share}%</div>`;
+  }).join('');
+  wrap.innerHTML = `
+    <div class="donut" style="background:conic-gradient(${stops});"></div>
+    <div class="legend">${legend}</div>
+  `;
+}
+
+function monthlyInvested(catId){
+  const now = new Date();
+  const y = now.getFullYear(), m = now.getMonth();
+  let sum = 0;
+  state.history.forEach(h=>{
+    if(h.type==='ingreso'){
+      const d = new Date(h.ts);
+      if(d.getFullYear()===y && d.getMonth()===m){
+        (h.breakdown||[]).forEach(b=>{
+          if(b.id === catId || (!b.id && b.name && b.name.toLowerCase().includes('invers'))){
+            sum += b.amount;
+          }
+        });
+      }
+    }
+  });
+  return sum;
+}
+
+function monthlyConfirmedInvestment(catId){
+  const now = new Date();
+  const y = now.getFullYear(), m = now.getMonth();
+  let sum = 0;
+  state.history.forEach(h=>{
+    if(h.type==='inversion_confirmada' && h.categoryId===catId){
+      const d = new Date(h.ts);
+      if(d.getFullYear()===y && d.getMonth()===m) sum += h.amount;
+    }
+  });
+  return sum;
+}
+
+async function investNow(id){
+  const cat = state.categories.find(c=>c.id===id);
+  if(!cat || !cat.isInvestment) return;
+  const amount = Math.round((cat.pendingToInvest||0)*100)/100;
+  if(!amount || amount<=0){ showToast('No tienes nada pendiente de invertir'); return; }
+  const proceed = await showGenericModal({
+    title: 'Confirmar inversión',
+    message: `Vas a marcar ${fmt(amount)} como invertidos en "${cat.name}". Hazlo cuando ya hayas comprado de verdad en tu bróker.`,
+    confirmText: 'Sí, ya lo he invertido'
+  });
+  if(!proceed) return;
+  cat.balance = Math.round((cat.balance + amount)*100)/100;
+  cat.totalAdded = Math.round(((cat.totalAdded ?? cat.balance) + amount)*100)/100;
+  cat.pendingToInvest = 0;
+  state.history.push({ id: uid(), type:'inversion_confirmada', categoryId:cat.id, categoryName:cat.name, amount, ts: Date.now() });
+  await saveState();
+  render();
+  showToast('Inversión confirmada 🚀');
+}
+
+function computeMonthlySeries(){
+  if(state.history.length===0) return [];
+  const sorted = [...state.history].sort((a,b)=>a.ts-b.ts);
+  let running = 0;
+  const byMonth = {};
+  sorted.forEach(item=>{
+    if(item.type==='ingreso') running += item.amount;
+    else if(item.type==='gasto') running -= item.amount;
+    const d = new Date(item.ts);
+    const key = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+    byMonth[key] = Math.round(running*100)/100;
+  });
+  const months = Object.keys(byMonth).sort();
+  const [sy,sm] = months[0].split('-').map(Number);
+  const now = new Date();
+  const ey = now.getFullYear(), em = now.getMonth()+1;
+  const series = [];
+  let y=sy, m=sm, last=0;
+  while(y<ey || (y===ey && m<=em)){
+    const key = y+'-'+String(m).padStart(2,'0');
+    if(byMonth[key]!==undefined) last = byMonth[key];
+    series.push({label:key, value:last});
+    m++; if(m>12){m=1;y++;}
+  }
+  return series;
+}
+
+function renderEvolution(){
+  const wrap = document.getElementById('evoWrap');
+  const series = computeMonthlySeries();
+  if(series.length < 2){
+    wrap.innerHTML = '<div class="evo-empty">Necesitas movimientos en al menos dos meses distintos para ver la evolución.</div>';
+    return;
+  }
+  const W = 600, H = 160, padX = 30, padY = 20;
+  const values = series.map(p=>p.value);
+  const min = Math.min(...values, 0);
+  const max = Math.max(...values, 1);
+  const range = (max - min) || 1;
+  const stepX = (W - padX*2) / (series.length - 1);
+  const pts = series.map((p,i)=>{
+    const x = padX + i*stepX;
+    const y = padY + (1 - (p.value - min)/range) * (H - padY*2);
+    return {x, y, label:p.label, value:p.value};
+  });
+  const pathD = pts.map((p,i)=> (i===0?'M':'L') + p.x.toFixed(1) + ' ' + p.y.toFixed(1)).join(' ');
+  const areaD = pathD + ` L ${pts[pts.length-1].x.toFixed(1)} ${H-padY} L ${pts[0].x.toFixed(1)} ${H-padY} Z`;
+
+  const labelIdxs = new Set([0, pts.length-1]);
+  if(pts.length>=3) labelIdxs.add(Math.floor((pts.length-1)/2));
+  const labels = [...labelIdxs].sort((a,b)=>a-b).map(i=>{
+    const p = pts[i];
+    return `<text x="${p.x}" y="${H-4}" font-size="10" fill="#6B6555" text-anchor="middle">${p.label}</text>`;
+  }).join('');
+
+  const valueText = hideAmounts ? '' : pts.map(p=>`<text x="${p.x}" y="${p.y-8}" font-size="9" fill="#6B6555" text-anchor="middle">${fmt(p.value)}</text>`).join('');
+
+  wrap.innerHTML = `
+    <svg class="evo-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+      <defs>
+        <linearGradient id="evoFill" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#2F6F4F" stop-opacity="0.35"/>
+          <stop offset="100%" stop-color="#2F6F4F" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      <path d="${areaD}" fill="url(#evoFill)" stroke="none"/>
+      <path d="${pathD}" fill="none" stroke="#2F6F4F" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+      ${pts.map(p=>`<circle cx="${p.x}" cy="${p.y}" r="3.5" fill="#2F6F4F"/>`).join('')}
+      ${labels}
+    </svg>
+  `;
+}
+
+function monthlySpent(catId){
+  const now = new Date();
+  const y = now.getFullYear(), m = now.getMonth();
+  let sum = 0;
+  state.history.forEach(h=>{
+    if(h.type==='gasto' && h.categoryId===catId && h.amount>0){
+      const d = new Date(h.ts);
+      if(d.getFullYear()===y && d.getMonth()===m) sum += h.amount;
+    }
+  });
+  return sum;
+}
+
+function buildEnvelopeCard(cat){
+  const card = document.createElement('div');
+  card.className = 'envelope' + (cat.balance < 0 ? ' negative' : '');
+  card.style.setProperty('--accent', cat.color);
+
+  let metaBlock;
+  if(cat.isInvestment){
+    let gainTag = '';
+    if(cat.marketValue !== null && cat.marketValue !== undefined){
+      const diff = Math.round((cat.marketValue - cat.balance)*100)/100;
+      const pct = cat.balance>0 ? (diff/cat.balance*100) : 0;
+      const positive = diff>=0;
+      const color = positive ? '#2F6F4F' : '#7A2E2E';
+      const sign = positive ? '+' : '';
+      gainTag = `<span class="env-tag" style="background:${color}1A; color:${color};">${positive?'📈':'📉'} ${sign}${fmt(diff)} (${sign}${pct.toFixed(1)}%)</span>`;
+    }
+    let lastUpdateLine = '';
+    if(cat.marketHistory && cat.marketHistory.length){
+      const lastTs = cat.marketHistory[cat.marketHistory.length-1].ts;
+      lastUpdateLine = `<div style="font-size:11px; color:var(--text-muted); margin:-8px 0 12px;">Valor actualizado: ${new Date(lastTs).toLocaleDateString('es-ES',{day:'2-digit',month:'short'})}</div>`;
+    }
+    metaBlock = `
+      <div class="env-tags">
+        <span class="env-tag" style="background:${cat.color}1A; color:${cat.color};">📈 Este mes: ${fmt(monthlyInvested(cat.id))}</span>
+        <span class="env-tag neutral">🔒 No disponible</span>
+        ${gainTag}
+      </div>
+      ${lastUpdateLine}`;
+  } else if(cat.isSubscriptionPot){
+    metaBlock = `<div class="env-meta">Reservado este mes: ${fmt(monthlyInvested(cat.id))}<br>Pagado este mes: ${fmt(monthlySpent(cat.id))}</div>`;
+  } else {
+    metaBlock = `<div class="env-meta">Aportado este mes: ${fmt(monthlyInvested(cat.id))}<br>Gastado este mes: ${fmt(monthlySpent(cat.id))}</div>`;
+  }
+
+  let goalBlock = '';
+  if(cat.goalEnabled && cat.goal){
+    const pct = Math.min(100, Math.round((Math.max(cat.balance,0)/cat.goal)*100));
+    goalBlock = `
+      <div class="goal-bar-wrap">
+        <div class="goal-bar"><div class="goal-fill" style="width:${pct}%; background:${cat.color}"></div></div>
+        <div class="goal-text">${fmt(cat.balance)} de ${fmt(cat.goal)} · ${pct}%</div>
+      </div>`;
+  }
+
+  const goalButton = cat.goalEnabled
+    ? `<button data-goal>${cat.goal ? 'Editar meta' : '+ Meta'}</button>`
+    : '';
+  const marketButton = cat.isInvestment
+    ? `<button data-market>${cat.marketValue!=null ? 'Actualizar valor' : '+ Valor actual'}</button>`
+    : '';
+  const manageSubsButton = cat.isSubscriptionPot
+    ? `<button data-managesubs>Gestionar</button>`
+    : '';
+
+  const negativeTag = cat.balance < 0
+    ? `<div class="env-tags"><span class="env-tag" style="background:#A13D3D1A; color:#A13D3D;">⚠️ Saldo negativo</span></div>`
+    : '';
+
+  const bankTag = cat.bank
+    ? `<div class="env-tags"><span class="env-tag neutral">${cat.bank.toLowerCase().includes('efect') ? '💵' : '🏦'} ${escapeHtml(cat.bank)}</span></div>`
+    : '';
+
+  card.innerHTML = `
+    <div class="env-top">
+      <div class="env-name">${escapeHtml(cat.name)}</div>
+      <div class="stamp">${cat.isSubscriptionPot ? '🔁' : cat.percent + '%'}</div>
+    </div>
+    <div class="env-balance">${fmt(cat.balance)}</div>
+    ${bankTag}
+    ${negativeTag}
+    ${metaBlock}
+    ${goalBlock}
+    <div class="env-actions">
+      ${goalButton}
+      ${marketButton}
+      ${manageSubsButton}
+      <button data-bank>${cat.bank ? 'Editar banco' : '+ Banco'}</button>
+      <button data-rename>Renombrar</button>
+      <button data-delete class="del">Eliminar</button>
+    </div>
+  `;
+
+  const goalBtn = card.querySelector('[data-goal]'); if(goalBtn) goalBtn.addEventListener('click', ()=>setGoal(cat.id));
+  const marketBtn = card.querySelector('[data-market]'); if(marketBtn) marketBtn.addEventListener('click', ()=>updateMarketValue(cat.id));
+  const bankBtn = card.querySelector('[data-bank]'); if(bankBtn) bankBtn.addEventListener('click', ()=>setBank(cat.id));
+  const manageSubsBtn = card.querySelector('[data-managesubs]');
+  if(manageSubsBtn) manageSubsBtn.addEventListener('click', ()=>{ renderSubscriptionItemsList(); openModal('subscriptionOverlay'); });
+  card.querySelector('[data-rename]').addEventListener('click', ()=>renameCategory(cat.id));
+  card.querySelector('[data-delete]').addEventListener('click', ()=>openDeleteModal(cat.id));
+
+  return card;
+}
+
+function renderEnvelopes(){
+  const grid = document.getElementById('envelopeGrid');
+  const spendable = state.categories.filter(c=>!c.isInvestment && !c.isSubscriptionPot);
+
+  document.getElementById('envCount').textContent = '(' + spendable.length + ')';
+  grid.innerHTML = '';
+  spendable.forEach(cat=> grid.appendChild(buildEnvelopeCard(cat)));
+
+  const addBtn = document.createElement('button');
+  addBtn.className = 'add-envelope';
+  addBtn.textContent = '+ Añadir sobre';
+  addBtn.addEventListener('click', ()=>openModal('addCatOverlay'));
+  grid.appendChild(addBtn);
+}
+
+function buildInvestmentSparkline(cat){
+  const hist = cat.marketHistory || [];
+  if(hist.length < 2){
+    return '<div class="empty" style="padding:16px 0;">Actualiza el valor un par de veces para ver aquí cómo evoluciona.</div>';
+  }
+  const W=600, H=120, padX=18, padY=18;
+  const values = hist.map(h=>h.value).concat([cat.balance]);
+  const min = Math.min(...values), max = Math.max(...values);
+  const range = (max-min) || 1;
+  const stepX = (W-padX*2)/(hist.length-1);
+  const pts = hist.map((h,i)=>{
+    const x = padX + i*stepX;
+    const y = padY + (1-(h.value-min)/range)*(H-padY*2);
+    return {x, y, value:h.value};
+  });
+  const refY = padY + (1-(cat.balance-min)/range)*(H-padY*2);
+  const pathD = pts.map((p,i)=>(i===0?'M':'L')+p.x.toFixed(1)+' '+p.y.toFixed(1)).join(' ');
+  const areaD = pathD + ` L ${pts[pts.length-1].x.toFixed(1)} ${H-padY} L ${pts[0].x.toFixed(1)} ${H-padY} Z`;
+  const last = pts[pts.length-1];
+  const positive = last.value >= cat.balance;
+  const lineColor = positive ? '#2F6F4F' : '#7A2E2E';
+  const firstDate = new Date(hist[0].ts).toLocaleDateString('es-ES',{day:'2-digit',month:'short'});
+  const lastDate = new Date(hist[hist.length-1].ts).toLocaleDateString('es-ES',{day:'2-digit',month:'short'});
+  return `
+    <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="width:100%; height:130px; display:block;">
+      <defs>
+        <linearGradient id="investFill-${cat.id}" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="${lineColor}" stop-opacity="0.30"/>
+          <stop offset="100%" stop-color="${lineColor}" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      <line x1="${padX}" y1="${refY.toFixed(1)}" x2="${W-padX}" y2="${refY.toFixed(1)}" stroke="#8a8471" stroke-width="1.5" stroke-dasharray="5 5"/>
+      <path d="${areaD}" fill="url(#investFill-${cat.id})" stroke="none"/>
+      <path d="${pathD}" fill="none" stroke="${lineColor}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+      ${pts.map(p=>`<circle cx="${p.x}" cy="${p.y}" r="3.5" fill="${lineColor}"/>`).join('')}
+    </svg>
+    <div style="font-size:11px; color:var(--text-muted); display:flex; justify-content:space-between; margin-top:2px;">
+      <span>${firstDate}</span>
+      <span>┄┄ línea punteada = lo invertido</span>
+      <span>${lastDate}</span>
+    </div>`;
+}
+
+function buildInvestmentPanelCard(cat){
+  const pending = Math.round((cat.pendingToInvest||0)*100)/100;
+  const monthlyConfirmed = monthlyConfirmedInvestment(cat.id);
+
+  let gainHtml = `<span style="color:var(--text-muted); font-size:15px;">Añade un valor actual para verlo</span>`;
+  if(cat.marketValue !== null && cat.marketValue !== undefined){
+    const diff = Math.round((cat.marketValue - cat.balance)*100)/100;
+    const pct = cat.balance>0 ? (diff/cat.balance*100) : 0;
+    const positive = diff>=0;
+    const color = positive ? '#2F6F4F' : '#7A2E2E';
+    const sign = positive ? '+' : '';
+    gainHtml = `<span style="color:${color};">${positive?'📈':'📉'} ${sign}${fmt(diff)} (${sign}${pct.toFixed(1)}%)</span>`;
+  }
+
+  const bankTag = cat.bank
+    ? `<span class="env-tag neutral" style="margin-left:8px;">${cat.bank.toLowerCase().includes('efect') ? '💵' : '🏦'} ${escapeHtml(cat.bank)}</span>`
+    : '';
+
+  const investButton = pending > 0
+    ? `<button class="btn-primary invest-now-btn" data-invest-now="${cat.id}">🚀 Pulsa para invertir ${fmt(pending)} acumulados</button>`
+    : `<div class="empty" style="padding:10px 0;">No tienes dinero pendiente de invertir ahora mismo.</div>`;
+
+  return `
+    <div class="envelope invest-card" style="--accent:${cat.color};">
+      <div class="env-top">
+        <div class="env-name">${escapeHtml(cat.name)} ${bankTag}</div>
+      </div>
+
+      <div class="invest-stats-row">
+        <div class="invest-stat">
+          <div class="invest-stat-label">Total invertido</div>
+          <div class="invest-stat-value">${fmt(cat.balance)}</div>
+        </div>
+        <div class="invest-stat">
+          <div class="invest-stat-label">Invertido este mes</div>
+          <div class="invest-stat-value">${fmt(monthlyConfirmed)}</div>
+        </div>
+        <div class="invest-stat">
+          <div class="invest-stat-label">Pendiente de invertir</div>
+          <div class="invest-stat-value" style="${pending>0?'color:var(--gold);':''}">${fmt(pending)}</div>
+        </div>
+        <div class="invest-stat">
+          <div class="invest-stat-label">Ganancia / Pérdida</div>
+          <div class="invest-stat-value" style="font-size:16px;">${gainHtml}</div>
+        </div>
+      </div>
+
+      ${investButton}
+
+      <div class="invest-chart-wrap">${buildInvestmentSparkline(cat)}</div>
+
+      <div class="env-actions" style="margin-top:16px;">
+        <button data-market2="${cat.id}">${cat.marketValue!=null ? 'Actualizar valor' : '+ Valor actual'}</button>
+        <button data-bank2="${cat.id}">${cat.bank ? 'Editar banco' : '+ Banco'}</button>
+        <button data-rename2="${cat.id}">Renombrar</button>
+        <button data-delete2="${cat.id}" class="del">Eliminar</button>
+      </div>
+    </div>
+  `;
+}
+
+function renderInvestmentPanel(){
+  const section = document.getElementById('investmentSection');
+  const wrap = document.getElementById('investPanel');
+  const investments = state.categories.filter(c=>c.isInvestment);
+
+  if(investments.length === 0){
+    section.style.display = 'none';
+    return;
+  }
+  section.style.display = 'block';
+  wrap.innerHTML = investments.map(cat => buildInvestmentPanelCard(cat)).join('<div style="height:16px;"></div>');
+
+  wrap.querySelectorAll('[data-invest-now]').forEach(b=>{
+    b.addEventListener('click', ()=>investNow(b.getAttribute('data-invest-now')));
+  });
+  wrap.querySelectorAll('[data-market2]').forEach(b=>{
+    b.addEventListener('click', ()=>updateMarketValue(b.getAttribute('data-market2')));
+  });
+  wrap.querySelectorAll('[data-bank2]').forEach(b=>{
+    b.addEventListener('click', ()=>setBank(b.getAttribute('data-bank2')));
+  });
+  wrap.querySelectorAll('[data-rename2]').forEach(b=>{
+    b.addEventListener('click', ()=>renameCategory(b.getAttribute('data-rename2')));
+  });
+  wrap.querySelectorAll('[data-delete2]').forEach(b=>{
+    b.addEventListener('click', ()=>openDeleteModal(b.getAttribute('data-delete2')));
+  });
+}
+
+async function updateMarketValue(id){
+  const cat = state.categories.find(c=>c.id===id);
+  if(!cat) return;
+  const result = await showGenericModal({
+    title: 'Valor actual de la inversión',
+    message: `¿Cuánto vale ahora mismo lo invertido en "${cat.name}"? (el valor total actual, no lo que has metido)`,
+    fields: [{id:'value', label:'Valor actual (€)', type:'number', value: cat.marketValue ?? cat.balance, step:'0.01'}],
+    confirmText: 'Guardar'
+  });
+  if(result===null) return;
+  const val = parseFloat(result.value);
+  if(isNaN(val) || val<0){ showToast('Valor no válido'); return; }
+  cat.marketValue = val;
+  cat.marketHistory = cat.marketHistory || [];
+  cat.marketHistory.push({ts: Date.now(), value: val});
+  await saveState();
+  render();
+  showToast('Valor actualizado');
+}
+
+async function setGoal(id){
+  const cat = state.categories.find(c=>c.id===id);
+  if(!cat) return;
+  const result = await showGenericModal({
+    title: `Meta para "${cat.name}"`,
+    message: 'Deja el campo vacío para quitar la meta.',
+    fields: [{id:'goal', label:'Meta en €', type:'number', value: cat.goal ?? '', step:'0.01', placeholder:'Ej: 800'}],
+    confirmText: 'Guardar'
+  });
+  if(result===null) return;
+  const raw = result.goal.trim();
+  if(raw===''){
+    cat.goal = null;
+  } else {
+    const val = parseFloat(raw);
+    if(!val || val<=0){ showToast('Meta no válida'); return; }
+    cat.goal = val;
+  }
+  await saveState();
+  render();
+}
+
+// ---------- Historial: filtros ----------
+function renderFilterOptions(){
+  const sel = document.getElementById('filterCategory');
+  const current = sel.value;
+  sel.innerHTML = '<option value="">Todos los sobres</option>' +
+    state.categories.map(c=>`<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
+  if([...sel.options].some(o=>o.value===current)) sel.value = current;
+}
+
+document.getElementById('filterCategory').addEventListener('change', renderHistory);
+document.getElementById('filterMonth').addEventListener('change', renderHistory);
+document.getElementById('filterText').addEventListener('input', renderHistory);
+document.getElementById('clearFilters').addEventListener('click', ()=>{
+  document.getElementById('filterCategory').value = '';
+  document.getElementById('filterMonth').value = '';
+  document.getElementById('filterText').value = '';
+  renderHistory();
+});
+
+function renderHistory(){
+  const list = document.getElementById('ledgerList');
+  const selCat = document.getElementById('filterCategory').value;
+  const selMonth = document.getElementById('filterMonth').value;
+  const selText = document.getElementById('filterText').value.trim().toLowerCase();
+  list.innerHTML = '';
+
+  let items = [...state.history].sort((a,b)=> b.ts - a.ts);
+
+  if(selCat){
+    items = items.filter(item=>{
+      if(item.type==='ingreso') return (item.breakdown||[]).some(b=>b.id===selCat);
+      return item.categoryId === selCat;
+    });
+  }
+  if(selMonth){
+    items = items.filter(item=>{
+      const d = new Date(item.ts);
+      const ym = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+      return ym === selMonth;
+    });
+  }
+  if(selText){
+    items = items.filter(item=>{
+      const noteMatch = (item.note||'').toLowerCase().includes(selText);
+      const catMatch = item.type==='ingreso'
+        ? (item.breakdown||[]).some(b=>(b.name||'').toLowerCase().includes(selText))
+        : (item.categoryName||'').toLowerCase().includes(selText);
+      return noteMatch || catMatch;
+    });
+  }
+
+  if(items.length===0){
+    list.innerHTML = '<div class="empty">No hay movimientos con estos filtros.</div>';
+    return;
+  }
+
+  items.forEach(item=>{
+    const row = document.createElement('div');
+    row.className = 'ledger-row';
+    const dateStr = new Date(item.ts).toLocaleDateString('es-ES', {day:'2-digit', month:'short', year:'numeric'});
+    const canModify = item.amount > 0;
+    if(item.type==='ingreso'){
+      row.innerHTML = `
+        <div class="ledger-icon icon-in">+</div>
+        <div class="ledger-main">
+          <div class="ledger-title">${escapeHtml(item.note || 'Ingreso')}</div>
+          <div class="ledger-sub">${item.breakdown.map(b=>`${escapeHtml(b.name)} ${fmt(b.amount)}`).join(' · ')}</div>
+        </div>
+        <div class="ledger-right">
+          <div>
+            <div class="ledger-amount amount-in">+${fmt(item.amount)}</div>
+            <div class="ledger-date">${dateStr}</div>
+          </div>
+          <div class="ledger-actions">
+            <button data-del-hist="${item.id}" class="del">Eliminar</button>
+          </div>
+        </div>
+      `;
+    } else if(item.type==='inversion_confirmada'){
+      row.innerHTML = `
+        <div class="ledger-icon" style="background:#1D5C73;">🚀</div>
+        <div class="ledger-main">
+          <div class="ledger-title">Inversión confirmada</div>
+          <div class="ledger-sub">${escapeHtml(item.categoryName)}</div>
+        </div>
+        <div class="ledger-right">
+          <div>
+            <div class="ledger-amount" style="color:#1D5C73;">${fmt(item.amount)}</div>
+            <div class="ledger-date">${dateStr}</div>
+          </div>
+          <div class="ledger-actions">
+            <button data-del-hist="${item.id}" class="del">Deshacer</button>
+          </div>
+        </div>
+      `;
+    } else {
+      const thumb = item.photo ? `<img src="${item.photo}" style="width:38px;height:38px;border-radius:8px;object-fit:cover;flex-shrink:0;">` : '';
+      row.innerHTML = `
+        <div class="ledger-icon icon-out">−</div>
+        ${thumb}
+        <div class="ledger-main">
+          <div class="ledger-title">${escapeHtml(item.note || 'Gasto')}</div>
+          <div class="ledger-sub">${escapeHtml(item.categoryName)}</div>
+        </div>
+        <div class="ledger-right">
+          <div>
+            <div class="ledger-amount amount-out">−${fmt(item.amount)}</div>
+            <div class="ledger-date">${dateStr}</div>
+          </div>
+          <div class="ledger-actions">
+            ${canModify ? `<button data-edit-hist="${item.id}">Editar</button>` : ''}
+            ${canModify ? `<button data-del-hist="${item.id}" class="del">Eliminar</button>` : ''}
+          </div>
+        </div>
+      `;
+    }
+    list.appendChild(row);
+  });
+
+  list.querySelectorAll('[data-del-hist]').forEach(b=>{
+    b.addEventListener('click', ()=>deleteHistoryEntry(b.getAttribute('data-del-hist')));
+  });
+  list.querySelectorAll('[data-edit-hist]').forEach(b=>{
+    b.addEventListener('click', ()=>editExpenseEntry(b.getAttribute('data-edit-hist')));
+  });
+}
+
+async function deleteHistoryEntry(id){
+  const item = state.history.find(h=>h.id===id);
+  if(!item) return;
+  if(item.amount <= 0){
+    showToast('Este movimiento no se puede eliminar automáticamente');
+    return;
+  }
+  const proceed = await showGenericModal({
+    title: 'Eliminar movimiento',
+    message: '¿Eliminar este movimiento? También se deshará su efecto en los saldos.',
+    confirmText: 'Eliminar',
+    danger: true
+  });
+  if(!proceed) return;
+
+  if(item.type==='ingreso'){
+    (item.breakdown||[]).forEach(b=>{
+      const cat = state.categories.find(c=>c.id===b.id);
+      if(cat){
+        if(cat.isInvestment){
+          cat.pendingToInvest = Math.round(((cat.pendingToInvest||0) - b.amount)*100)/100;
+        } else {
+          cat.balance = Math.round((cat.balance - b.amount)*100)/100;
+          cat.totalAdded = Math.round(((cat.totalAdded ?? cat.balance) - b.amount)*100)/100;
+        }
+      }
+    });
+  } else if(item.type==='gasto'){
+    const cat = state.categories.find(c=>c.id===item.categoryId);
+    if(cat){
+      cat.balance = Math.round((cat.balance + item.amount)*100)/100;
+    }
+  } else if(item.type==='inversion_confirmada'){
+    const cat = state.categories.find(c=>c.id===item.categoryId);
+    if(cat){
+      cat.balance = Math.round((cat.balance - item.amount)*100)/100;
+      cat.totalAdded = Math.round(((cat.totalAdded ?? cat.balance) - item.amount)*100)/100;
+      cat.pendingToInvest = Math.round(((cat.pendingToInvest||0) + item.amount)*100)/100;
+    }
+  }
+  state.history = state.history.filter(h=>h.id!==id);
+  await saveState();
+  render();
+  showToast('Movimiento eliminado');
+}
+
+async function editExpenseEntry(id){
+  const item = state.history.find(h=>h.id===id);
+  if(!item || item.type!=='gasto' || item.amount<=0){ showToast('Este movimiento no se puede editar'); return; }
+  const cat = state.categories.find(c=>c.id===item.categoryId);
+  if(!cat){ showToast('El sobre de este gasto ya no existe'); return; }
+  const result = await showGenericModal({
+    title: 'Editar gasto',
+    fields: [
+      {id:'amount', label:'Cantidad (€)', type:'number', value:item.amount, step:'0.01'},
+      {id:'note', label:'Concepto', type:'text', value:item.note || ''}
+    ],
+    confirmText: 'Guardar'
+  });
+  if(result===null) return;
+  const newAmount = parseFloat(result.amount);
+  if(!newAmount || newAmount<=0){ showToast('Cantidad no válida'); return; }
+  cat.balance = Math.round((cat.balance + item.amount - newAmount)*100)/100;
+  item.amount = newAmount;
+  item.note = result.note.trim();
+  await saveState();
+  render();
+  showToast('Movimiento actualizado');
+}
+
+function escapeHtml(str){
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+// ---------- Modal helpers ----------
+function openModal(id){ document.getElementById(id).classList.add('open'); }
+function closeAllModals(){ document.querySelectorAll('.overlay').forEach(o=>o.classList.remove('open')); }
+
+document.querySelectorAll('.overlay:not(.generic-modal) [data-close]').forEach(b=>{
+  b.addEventListener('click', closeAllModals);
+});
+document.querySelectorAll('.overlay:not(.generic-modal)').forEach(o=>{
+  o.addEventListener('click', (e)=>{ if(e.target===o) closeAllModals(); });
+});
+
+// Generic confirm/prompt modal. Layers on top of any modal already open, without closing it.
+// showGenericModal({title, message, fields, confirmText, cancelText, danger})
+// - no fields -> resolves true (confirmed) or null (cancelled)
+// - with fields -> resolves {fieldId: value, ...} or null (cancelled)
+function showGenericModal(opts){
+  return new Promise((resolve)=>{
+    const overlay = document.getElementById('genericModalOverlay');
+    document.getElementById('genericModalTitle').textContent = opts.title || '';
+    const msgEl = document.getElementById('genericModalMessage');
+    if(opts.message){ msgEl.textContent = opts.message; msgEl.style.display = 'block'; }
+    else { msgEl.style.display = 'none'; }
+
+    const fieldsWrap = document.getElementById('genericModalFields');
+    fieldsWrap.innerHTML = '';
+    (opts.fields || []).forEach(f=>{
+      const div = document.createElement('div');
+      div.className = 'field';
+      const val = (f.value === undefined || f.value === null) ? '' : String(f.value);
+      div.innerHTML = `<label>${escapeHtml(f.label)}</label><input type="${f.type||'text'}" id="gf_${f.id}" value="${escapeHtml(val)}" placeholder="${escapeHtml(f.placeholder||'')}" ${f.step?`step="${f.step}"`:''}>`;
+      fieldsWrap.appendChild(div);
+    });
+
+    const confirmBtn = document.getElementById('genericModalConfirm');
+    const cancelBtn = document.getElementById('genericModalCancel');
+    const closeXBtn = overlay.querySelector('.close-x');
+    confirmBtn.textContent = opts.confirmText || 'Aceptar';
+    confirmBtn.className = opts.danger ? 'btn-secondary' : 'btn-primary';
+    cancelBtn.textContent = opts.cancelText || 'Cancelar';
+
+    openModal('genericModalOverlay');
+    const firstInput = fieldsWrap.querySelector('input');
+    if(firstInput) setTimeout(()=>firstInput.focus(), 50);
+
+    function cleanup(){
+      confirmBtn.removeEventListener('click', onConfirm);
+      cancelBtn.removeEventListener('click', onCancel);
+      closeXBtn.removeEventListener('click', onCancel);
+      overlay.removeEventListener('click', onOverlayClick);
+    }
+    function finish(id){ overlay.classList.remove('open'); cleanup(); }
+    function onConfirm(){
+      const result = {};
+      (opts.fields || []).forEach(f=>{ result[f.id] = document.getElementById('gf_'+f.id).value; });
+      finish();
+      resolve((opts.fields && opts.fields.length) ? result : true);
+    }
+    function onCancel(){ finish(); resolve(null); }
+    function onOverlayClick(e){ if(e.target === overlay) onCancel(); }
+
+    confirmBtn.addEventListener('click', onConfirm);
+    cancelBtn.addEventListener('click', onCancel);
+    closeXBtn.addEventListener('click', onCancel);
+    overlay.addEventListener('click', onOverlayClick);
+  });
+}
+
+// ---------- Ingreso ----------
+document.getElementById('openIncome').addEventListener('click', ()=>{
+  document.getElementById('incomeAmount').value = '';
+  document.getElementById('incomeNote').value = '';
+  document.getElementById('incomeModePercent').checked = true;
+  document.getElementById('incomeManualField').style.display = 'none';
+  const manualSel = document.getElementById('incomeManualCategory');
+  manualSel.innerHTML = state.categories.map(c=>`<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
+  updateIncomePreview();
+  openModal('incomeOverlay');
+  document.getElementById('incomeAmount').focus();
+});
+document.getElementById('incomeAmount').addEventListener('input', updateIncomePreview);
+document.getElementById('incomeManualCategory').addEventListener('change', updateIncomePreview);
+document.querySelectorAll('input[name="incomeMode"]').forEach(r=>{
+  r.addEventListener('change', ()=>{
+    const manual = document.getElementById('incomeModeManual').checked;
+    document.getElementById('incomeManualField').style.display = manual ? 'block' : 'none';
+    updateIncomePreview();
+  });
+});
+
+function updateIncomePreview(){
+  const amount = parseFloat(document.getElementById('incomeAmount').value) || 0;
+  const box = document.getElementById('incomePreview');
+  if(amount<=0){
+    box.innerHTML = '<div class="preview-row" style="color:#6B6555">Escribe una cantidad para ver el reparto</div>';
+    return;
+  }
+  if(document.getElementById('incomeModeManual').checked){
+    const cat = state.categories.find(c=>c.id===document.getElementById('incomeManualCategory').value);
+    box.innerHTML = cat ? `<div class="preview-row"><span>Todo a ${escapeHtml(cat.name)}</span><b>${fmt(amount)}</b></div>` : '';
+    return;
+  }
+  const totalSubs = (state.subscriptions||[]).reduce((s,x)=>s+x.amount, 0);
+  const subsApplied = Math.min(totalSubs, amount);
+  const remaining = amount - subsApplied;
+  let rows = '';
+  if(subsApplied > 0){
+    rows += `<div class="preview-row"><span>🔁 Suscripciones (fijo)</span><b>${fmt(subsApplied)}</b></div>`;
+  }
+  rows += state.categories.filter(c=>!c.isSubscriptionPot).map(c=>{
+    const part = remaining * c.percent/100;
+    const suffix = c.isInvestment ? ' <span style="opacity:0.7;">(pendiente de invertir)</span>' : '';
+    return `<div class="preview-row"><span>${escapeHtml(c.name)}${suffix} (${c.percent}%)</span><b>${fmt(part)}</b></div>`;
+  }).join('');
+  box.innerHTML = rows;
+}
+
+document.getElementById('confirmIncome').addEventListener('click', async ()=>{
+  const amount = parseFloat(document.getElementById('incomeAmount').value);
+  const note = document.getElementById('incomeNote').value.trim();
+  if(!amount || amount<=0){ showToast('Introduce una cantidad válida'); return; }
+
+  let breakdown;
+  if(document.getElementById('incomeModeManual').checked){
+    const cat = state.categories.find(c=>c.id===document.getElementById('incomeManualCategory').value);
+    if(!cat){ showToast('Elige un sobre'); return; }
+    if(cat.isInvestment){
+      cat.pendingToInvest = Math.round(((cat.pendingToInvest||0) + amount)*100)/100;
+    } else {
+      cat.balance = Math.round((cat.balance + amount)*100)/100;
+      cat.totalAdded = Math.round(((cat.totalAdded ?? cat.balance) + amount)*100)/100;
+    }
+    breakdown = [{id:cat.id, name:cat.name, amount}];
+  } else {
+    breakdown = [];
+    const totalSubs = (state.subscriptions||[]).reduce((s,x)=>s+x.amount, 0);
+    const subsApplied = Math.round(Math.min(totalSubs, amount)*100)/100;
+    const remaining = Math.round((amount - subsApplied)*100)/100;
+    if(subsApplied > 0){
+      const pot = ensureSubscriptionPot();
+      pot.balance = Math.round((pot.balance + subsApplied)*100)/100;
+      pot.totalAdded = Math.round(((pot.totalAdded ?? pot.balance) + subsApplied)*100)/100;
+      breakdown.push({id:pot.id, name:pot.name, amount:subsApplied});
+    }
+    state.categories.filter(c=>!c.isSubscriptionPot).forEach(c=>{
+      const part = Math.round(remaining * c.percent/100 * 100)/100;
+      if(c.isInvestment){
+        c.pendingToInvest = Math.round(((c.pendingToInvest||0) + part)*100)/100;
+      } else {
+        c.balance = Math.round((c.balance + part)*100)/100;
+        c.totalAdded = Math.round(((c.totalAdded ?? c.balance) + part)*100)/100;
+      }
+      breakdown.push({id:c.id, name:c.name, amount:part});
+    });
+  }
+
+  state.history.push({ id: uid(), type:'ingreso', amount, note, breakdown, ts: Date.now() });
+  await saveState();
+  render();
+  closeAllModals();
+  showToast('Ingreso añadido');
+});
+
+// ---------- Gasto ----------
+let expensePhotoData = null;
+
+document.getElementById('openExpense').addEventListener('click', ()=>{
+  const sel = document.getElementById('expenseCategory');
+  sel.innerHTML = state.categories
+    .filter(c=>!c.isInvestment)
+    .map(c=>`<option value="${c.id}">${escapeHtml(c.name)} — ${fmt(c.balance)} disponibles</option>`).join('');
+  document.getElementById('expenseAmount').value = '';
+  document.getElementById('expenseNote').value = '';
+  document.getElementById('expensePhotoInput').value = '';
+  document.getElementById('expensePhotoPreview').style.display = 'none';
+  document.getElementById('expensePhotoRemove').style.display = 'none';
+  expensePhotoData = null;
+  openModal('expenseOverlay');
+});
+
+document.getElementById('expensePhotoInput').addEventListener('change', async (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  try{
+    const dataUrl = await resizeImageToDataUrl(file, 500);
+    expensePhotoData = dataUrl;
+    const preview = document.getElementById('expensePhotoPreview');
+    preview.src = dataUrl;
+    preview.style.display = 'block';
+    document.getElementById('expensePhotoRemove').style.display = 'inline-block';
+  }catch(err){
+    console.error('Error procesando la foto', err);
+    showToast('No se pudo procesar la foto');
+  }
+});
+
+document.getElementById('expensePhotoRemove').addEventListener('click', ()=>{
+  expensePhotoData = null;
+  document.getElementById('expensePhotoInput').value = '';
+  document.getElementById('expensePhotoPreview').style.display = 'none';
+  document.getElementById('expensePhotoRemove').style.display = 'none';
+});
+
+document.getElementById('confirmExpense').addEventListener('click', async ()=>{
+  const catId = document.getElementById('expenseCategory').value;
+  const amount = parseFloat(document.getElementById('expenseAmount').value);
+  const note = document.getElementById('expenseNote').value.trim();
+  if(!amount || amount<=0){ showToast('Introduce una cantidad válida'); return; }
+  const cat = state.categories.find(c=>c.id===catId);
+  if(!cat) return;
+  if(amount > cat.balance){
+    const proceed = await showGenericModal({
+      title: 'Saldo insuficiente',
+      message: `Este sobre solo tiene ${fmt(cat.balance)}. ¿Quieres restar igualmente y dejarlo en negativo?`,
+      confirmText: 'Sí, continuar',
+      danger: true
+    });
+    if(!proceed) return;
+  }
+  cat.balance = Math.round((cat.balance - amount)*100)/100;
+  state.history.push({ id: uid(), type:'gasto', amount, note, categoryName:cat.name, categoryId:cat.id, photo: expensePhotoData, ts: Date.now() });
+  await saveState();
+  render();
+  closeAllModals();
+  showToast('Gasto registrado');
+});
+
+// ---------- Ajustar porcentajes ----------
+document.getElementById('openPercents').addEventListener('click', ()=>{
+  renderPercentList();
+  openModal('percentOverlay');
+});
+
+// ---------- Suscripciones ----------
+document.getElementById('openSubscriptions').addEventListener('click', ()=>{
+  renderSubscriptionItemsList();
+  openModal('subscriptionOverlay');
+});
+
+function renderSubscriptionsCard(){
+  const section = document.getElementById('subscriptionSection');
+  const wrap = document.getElementById('subscriptionCard');
+  const subs = state.subscriptions || [];
+  const pot = state.categories.find(c=>c.isSubscriptionPot);
+
+  if(subs.length === 0 && (!pot || pot.balance === 0)){
+    section.style.display = 'none';
+    return;
+  }
+  section.style.display = 'block';
+
+  const totalMonthly = subs.reduce((a,b)=>a+b.amount, 0);
+
+  const itemsHtml = subs.length
+    ? subs.map(s=>`
+        <div class="sub-item-row">
+          <span class="sub-item-name">${escapeHtml(s.name)}</span>
+          <span class="sub-item-amount">${fmt(s.amount)}/mes</span>
+          <button data-del-sub-inline="${s.id}" class="del">Quitar</button>
+        </div>
+      `).join('')
+    : '<div class="empty" style="padding:10px 0;">Aún no has añadido ninguna suscripción.</div>';
+
+  const potLine = pot
+    ? `<div class="env-meta" style="margin-top:14px;">Fondo reservado: ${fmt(pot.balance)} · Pagado este mes: ${fmt(monthlySpent(pot.id))}</div>`
+    : '';
+
+  wrap.innerHTML = `
+    <div class="envelope" style="--accent:${PALETTE[6]};">
+      <div class="env-balance">${fmt(totalMonthly)}</div>
+      <div class="env-meta" style="margin-bottom:2px;">Total en suscripciones al mes</div>
+      <div class="sub-items-list">${itemsHtml}</div>
+      ${potLine}
+      <div class="env-actions" style="margin-top:14px;">
+        <button id="addSubQuickBtn">+ Añadir suscripción</button>
+      </div>
+    </div>
+  `;
+
+  wrap.querySelectorAll('[data-del-sub-inline]').forEach(b=>{
+    b.addEventListener('click', ()=>removeSubscription(b.getAttribute('data-del-sub-inline')));
+  });
+  const addBtn = wrap.querySelector('#addSubQuickBtn');
+  if(addBtn) addBtn.addEventListener('click', ()=>{ renderSubscriptionItemsList(); openModal('subscriptionOverlay'); });
+}
+
+function renderSubscriptionItemsList(){
+  const wrap = document.getElementById('subscriptionItemsList');
+  const subs = state.subscriptions || [];
+  if(subs.length === 0){
+    wrap.innerHTML = '<div class="empty" style="padding:10px 0;">Aún no tienes ninguna suscripción añadida.</div>';
+    return;
+  }
+  const total = subs.reduce((a,b)=>a+b.amount, 0);
+  wrap.innerHTML = subs.map(s=>`
+    <div class="percent-row">
+      <div class="name">${escapeHtml(s.name)}</div>
+      <div style="font-weight:600; margin-right:10px; font-variant-numeric:tabular-nums;">${fmt(s.amount)}/mes</div>
+      <button data-del-sub="${s.id}" class="del" style="padding:6px 10px; font-size:12px;">Quitar</button>
+    </div>
+  `).join('') + `<div class="percent-sum ok">Total mensual: ${fmt(total)}</div>`;
+
+  wrap.querySelectorAll('[data-del-sub]').forEach(b=>{
+    b.addEventListener('click', ()=>removeSubscription(b.getAttribute('data-del-sub')));
+  });
+}
+
+document.getElementById('addSubscriptionBtn').addEventListener('click', async ()=>{
+  const name = document.getElementById('newSubName').value.trim();
+  const amount = parseFloat(document.getElementById('newSubAmount').value);
+  if(!name){ showToast('Ponle un nombre a la suscripción'); return; }
+  if(!amount || amount<=0){ showToast('Cantidad no válida'); return; }
+  ensureSubscriptionPot();
+  state.subscriptions = state.subscriptions || [];
+  state.subscriptions.push({ id: 'sub_' + Date.now(), name, amount });
+  await saveState();
+  render();
+  renderSubscriptionItemsList();
+  document.getElementById('newSubName').value = '';
+  document.getElementById('newSubAmount').value = '';
+  showToast('Suscripción añadida');
+});
+
+async function removeSubscription(id){
+  state.subscriptions = (state.subscriptions || []).filter(s=>s.id!==id);
+  await saveState();
+  render();
+  renderSubscriptionItemsList();
+  showToast('Suscripción eliminada');
+}
+
+function renderPercentList(){
+  const list = document.getElementById('percentList');
+  list.innerHTML = state.categories.filter(c=>!c.isSubscriptionPot).map(c=>`
+    <div class="percent-row">
+      <div class="dot" style="background:${c.color}"></div>
+      <div class="name">${escapeHtml(c.name)}</div>
+      <input type="number" min="0" max="100" step="1" value="${c.percent}" data-pid="${c.id}">
+    </div>
+  `).join('');
+  list.querySelectorAll('input').forEach(inp=>{
+    inp.addEventListener('input', updatePercentSum);
+  });
+  updatePercentSum();
+}
+
+function updatePercentSum(){
+  const inputs = document.querySelectorAll('#percentList input');
+  let sum = 0;
+  inputs.forEach(i=> sum += (parseFloat(i.value)||0));
+  const el = document.getElementById('percentSum');
+  el.textContent = 'Suma: ' + sum + '%';
+  el.className = 'percent-sum ' + (sum===100 ? 'ok' : 'bad');
+  document.getElementById('percentError').classList.toggle('show', sum!==100);
+  return sum;
+}
+
+document.getElementById('confirmPercents').addEventListener('click', async ()=>{
+  const sum = updatePercentSum();
+  if(sum!==100){ showToast('La suma debe ser 100%'); return; }
+  document.querySelectorAll('#percentList input').forEach(inp=>{
+    const cat = state.categories.find(c=>c.id===inp.getAttribute('data-pid'));
+    if(cat) cat.percent = parseFloat(inp.value)||0;
+  });
+  await saveState();
+  render();
+  closeAllModals();
+  showToast('Reparto actualizado');
+});
+
+// ---------- Añadir sobre ----------
+document.getElementById('confirmAddCat').addEventListener('click', async ()=>{
+  const name = document.getElementById('newCatName').value.trim();
+  const percent = parseFloat(document.getElementById('newCatPercent').value);
+  if(!name){ showToast('Ponle un nombre al sobre'); return; }
+  if(!percent || percent<1 || percent>99){ showToast('El porcentaje debe estar entre 1 y 99'); return; }
+
+  const factor = (100 - percent) / 100;
+  let running = 0;
+  state.categories.filter(c=>!c.isSubscriptionPot).forEach(c=>{
+    c.percent = Math.round(c.percent * factor);
+    running += c.percent;
+  });
+  let drift = (100 - percent) - running;
+  const percentCats = state.categories.filter(c=>!c.isSubscriptionPot);
+  if(percentCats.length>0){
+    percentCats[percentCats.length-1].percent += drift;
+  }
+
+  const goalEnabled = document.getElementById('newCatGoalEnabled').checked;
+  const isInvestment = document.getElementById('newCatIsInvestment').checked;
+  const color = PALETTE[state.categories.length % PALETTE.length];
+  state.categories.push({ id: 'cat_' + Date.now(), name, percent, balance:0, totalAdded:0, goal:null, goalEnabled, isInvestment, bank:'', color });
+
+  await saveState();
+  render();
+  closeAllModals();
+  document.getElementById('newCatName').value='';
+  document.getElementById('newCatPercent').value='';
+  document.getElementById('newCatGoalEnabled').checked = false;
+  document.getElementById('newCatIsInvestment').checked = false;
+  showToast('Sobre creado. Revisa el reparto en "Ajustar reparto"');
+});
+
+// ---------- Renombrar ----------
+async function renameCategory(id){
+  const cat = state.categories.find(c=>c.id===id);
+  if(!cat) return;
+  const result = await showGenericModal({
+    title: 'Renombrar sobre',
+    fields: [{id:'name', label:'Nombre', type:'text', value:cat.name}],
+    confirmText: 'Guardar'
+  });
+  if(result===null) return;
+  const newName = result.name.trim();
+  if(newName){
+    cat.name = newName;
+    await saveState();
+    render();
+  }
+}
+
+async function setBank(id){
+  const cat = state.categories.find(c=>c.id===id);
+  if(!cat) return;
+  const result = await showGenericModal({
+    title: `¿Dónde está el dinero de "${cat.name}"?`,
+    message: 'Escribe el banco (ej: BBVA, ING, Revolut) o "Efectivo" si lo tienes en metálico. Déjalo vacío para quitarlo.',
+    fields: [{id:'bank', label:'Banco o efectivo', type:'text', value: cat.bank || '', placeholder:'Ej: BBVA, Efectivo...'}],
+    confirmText: 'Guardar'
+  });
+  if(result===null) return;
+  cat.bank = result.bank.trim();
+  await saveState();
+  render();
+}
+
+// ---------- Eliminar sobre ----------
+function openDeleteModal(id){
+  const cat = state.categories.find(c=>c.id===id);
+  if(!cat) return;
+  if(state.categories.length<=1){
+    showToast('Debe quedar al menos un sobre');
+    return;
+  }
+  pendingDeleteId = id;
+  const hint = document.getElementById('delCatHint');
+  const moveField = document.getElementById('delCatMoveField');
+  const sel = document.getElementById('delCatMoveTo');
+  const totalToMove = Math.round((cat.balance + (cat.pendingToInvest||0))*100)/100;
+  if(totalToMove !== 0){
+    hint.textContent = `"${cat.name}" tiene ${fmt(totalToMove)} guardados (invertido + pendiente). Elige a qué sobre se mueve ese dinero antes de eliminarlo.`;
+    moveField.style.display = 'block';
+    sel.innerHTML = state.categories.filter(c=>c.id!==id).map(c=>`<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
+  } else {
+    hint.textContent = `Vas a eliminar "${cat.name}". Su ${cat.percent}% se repartirá entre los sobres restantes.`;
+    moveField.style.display = 'none';
+  }
+  openModal('delCatOverlay');
+}
+
+document.getElementById('confirmDelCat').addEventListener('click', async ()=>{
+  const cat = state.categories.find(c=>c.id===pendingDeleteId);
+  if(!cat) return;
+  const totalToMove = Math.round((cat.balance + (cat.pendingToInvest||0))*100)/100;
+  if(totalToMove !== 0){
+    const targetId = document.getElementById('delCatMoveTo').value;
+    const target = state.categories.find(c=>c.id===targetId);
+    if(target){
+      target.balance = Math.round((target.balance + totalToMove)*100)/100;
+      target.totalAdded = Math.round(((target.totalAdded ?? target.balance) + totalToMove)*100)/100;
+      state.history.push({
+        id: uid(), type:'gasto', amount: 0, note: `Saldo movido de "${cat.name}" a "${target.name}" (${fmt(totalToMove)})`,
+        categoryName: target.name, categoryId: target.id, ts: Date.now()
+      });
+    }
+  }
+  if(cat.isSubscriptionPot){
+    state.subscriptions = [];
+  }
+  const removedPercent = cat.percent;
+  state.categories = state.categories.filter(c=>c.id!==cat.id);
+  const factor = 100/((100-removedPercent) === 0 ? 100 : (100-removedPercent));
+  let running = 0;
+  state.categories.filter(c=>!c.isSubscriptionPot).forEach(c=>{
+    c.percent = Math.round(c.percent * factor);
+    running += c.percent;
+  });
+  let drift = 100 - running;
+  const percentCats = state.categories.filter(c=>!c.isSubscriptionPot);
+  if(percentCats.length>0){
+    percentCats[percentCats.length-1].percent += drift;
+  }
+  await saveState();
+  render();
+  closeAllModals();
+  showToast('Sobre eliminado');
+});
+</script>
+</body>
+</html>
